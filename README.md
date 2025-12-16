@@ -1,0 +1,2 @@
+# MDtoWORD-for-NJUST
+一个能将Markdown格式的文件转换为word的小工具，word的排版默认为NJUST的学位论文排版。搭配一键将AI的输出内容转换为md文件的工具（deepshare)），有效解决AI输出内容复制粘贴到word格式不正确的难题。
