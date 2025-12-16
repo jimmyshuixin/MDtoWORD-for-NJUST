@@ -10,13 +10,20 @@ from bs4 import BeautifulSoup, NavigableString, Tag
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QLabel, QVBoxLayout, 
                              QWidget, QProgressBar, QMessageBox, QPushButton, QFileDialog)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QDragEnterEvent, QDropEvent
+from PyQt6.QtGui import QDragEnterEvent, QDropEvent, QCursor
 from docx import Document
 from docx.shared import Pt, Cm, Mm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
 from docx.enum.table import WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
+
+"""
+NJUST Thesis Formatter
+Author: [您的名字]
+Repo: https://github.com/your-repo
+Description: 将 Markdown 转换为符合 NJUST 规范的 Word 文档。
+"""
 
 # 尝试导入 watchdog，如果不存在则使用轮询作为备用
 try:
@@ -227,8 +234,6 @@ class NJUST_Formatter:
         shd.set(qn('w:fill'), 'F5F5F5') # 浅灰色背景
         pPr.append(shd)
         
-        # 添加边框 (可选，这里只加背景)
-        
         for run in p.runs:
             self._apply_composite_font(run, NJUST_Config.SIZE_CODE, bold=False, is_code=True)
 
@@ -315,7 +320,6 @@ class NJUST_Formatter:
             clean_text = p.text.strip().replace(' ', '')
             
             # [新增] 识别 Pandoc 生成的代码块
-            # Pandoc 通常将代码块样式命名为 'Source Code', 'VerbatimChar', 'Code' 等
             if 'Source Code' in style_name or 'Code' in style_name:
                 self._format_code_block(p)
                 continue
@@ -680,7 +684,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("NJUST 论文格式转换工具 (自动监控版)")
-        self.resize(600, 550)
+        self.resize(600, 600)
         self.setAcceptDrops(True)
         self.watcher_thread = None
         self.init_ui()
@@ -689,7 +693,10 @@ class MainWindow(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
+        layout.setSpacing(15)
+        layout.setContentsMargins(20, 20, 20, 20)
         
+        # 拖拽区域
         self.label = QLabel("模式一：将 Markdown (.md) 文件拖入此处")
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.label.setStyleSheet("""
@@ -699,21 +706,26 @@ class MainWindow(QMainWindow):
                 font-size: 16px;
                 color: #555;
                 background-color: #f9f9f9;
-                padding: 20px;
+                padding: 30px;
             }
         """)
         layout.addWidget(self.label)
         
+        # 监控按钮
         self.monitor_btn = QPushButton("模式二：选择并监控文件夹 (自动转换)")
+        self.monitor_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.monitor_btn.setMinimumHeight(50)
         self.monitor_btn.setStyleSheet("""
             QPushButton {
                 background-color: #0078D7;
                 color: white;
                 font-size: 14px;
+                font-weight: bold;
                 border-radius: 5px;
+                border: none;
             }
             QPushButton:hover { background-color: #005A9E; }
+            QPushButton:pressed { background-color: #004578; }
         """)
         self.monitor_btn.clicked.connect(self.select_folder)
         layout.addWidget(self.monitor_btn)
@@ -725,20 +737,46 @@ class MainWindow(QMainWindow):
 
         self.status_label = QLabel("就绪")
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.status_label.setStyleSheet("font-size: 13px; color: #333;")
         layout.addWidget(self.status_label)
 
         self.progress = QProgressBar()
         self.progress.setVisible(False)
-        self.progress.setStyleSheet("QProgressBar { height: 8px; border-radius: 4px; }")
+        self.progress.setStyleSheet("""
+            QProgressBar { height: 6px; border-radius: 3px; background: #eee; }
+            QProgressBar::chunk { background-color: #0078D7; border-radius: 3px; }
+        """)
         layout.addWidget(self.progress)
         
+        # 底部信息栏布局
+        bottom_layout = QVBoxLayout()
+        bottom_layout.setSpacing(5)
+
         # 依赖检测提示
         ver_info = "V3.2 | 代码块识别 | "
         ver_info += "Watchdog 监控中" if HAS_WATCHDOG else "Watchdog 未安装 (轮询模式)"
         version_label = QLabel(ver_info)
         version_label.setAlignment(Qt.AlignmentFlag.AlignRight)
         version_label.setStyleSheet("color: #999; font-size: 10px;")
-        layout.addWidget(version_label)
+        bottom_layout.addWidget(version_label)
+
+        # =========================================
+        # [新增] 作者信息与引导链接
+        # =========================================
+        # 请修改下方的 href 和 文本内容
+        author_text = (
+            'Created by <a href="https://github.com/jimmyshuixin/MDtoWORD-for-NJUST" style="color:#0078D7; text-decoration:none;">'
+            '[JimmyShuixin]</a> | '
+            '<a href="https://github.com/jimmyshuixin/MDtoWORD-for-NJUST/blob/main/README.md" style="color:#0078D7; text-decoration:none;">'
+            '查看使用教程 & 帮助</a>'
+        )
+        self.author_label = QLabel(author_text)
+        self.author_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.author_label.setOpenExternalLinks(True) # 允许点击跳转浏览器
+        self.author_label.setStyleSheet("QLabel { color: #666; font-size: 11px; margin-top: 5px; }")
+        
+        bottom_layout.addWidget(self.author_label)
+        layout.addLayout(bottom_layout)
 
     def select_folder(self):
         folder = QFileDialog.getExistingDirectory(self, "选择要监控的 Markdown 文件夹")
@@ -766,7 +804,7 @@ class MainWindow(QMainWindow):
             urls = event.mimeData().urls()
             if urls and urls[0].toLocalFile().lower().endswith('.md'):
                 event.accept()
-                self.label.setStyleSheet("QLabel { border: 3px dashed #4CAF50; background-color: #E8F5E9; color: #2E7D32; font-size: 16px; padding: 20px; }")
+                self.label.setStyleSheet("QLabel { border: 3px dashed #4CAF50; background-color: #E8F5E9; color: #2E7D32; font-size: 16px; padding: 30px; }")
                 self.label.setText("释放以开始转换")
             else:
                 event.ignore()
@@ -775,7 +813,7 @@ class MainWindow(QMainWindow):
 
     def dragLeaveEvent(self, event):
         self.label.setText("模式一：将 Markdown (.md) 文件拖入此处")
-        self.label.setStyleSheet("QLabel { border: 3px dashed #aaa; background-color: #f9f9f9; font-size: 16px; color: #555; padding: 20px; }")
+        self.label.setStyleSheet("QLabel { border: 3px dashed #aaa; background-color: #f9f9f9; font-size: 16px; color: #555; padding: 30px; }")
 
     def dropEvent(self, event: QDropEvent):
         urls = event.mimeData().urls()
@@ -809,7 +847,7 @@ class MainWindow(QMainWindow):
         self.progress.setVisible(False)
         self.label.setText("转换成功！")
         self.status_label.setText(f"已生成: {os.path.basename(output_path)}")
-        self.label.setStyleSheet("QLabel { border: 3px solid #4CAF50; color: #4CAF50; font-size: 16px; padding: 20px; }")
+        self.label.setStyleSheet("QLabel { border: 3px solid #4CAF50; color: #4CAF50; font-size: 16px; padding: 30px; }")
         
         try:
             if sys.platform == 'win32':
@@ -824,7 +862,7 @@ class MainWindow(QMainWindow):
     def on_error(self, err_msg):
         self.progress.setVisible(False)
         self.label.setText("转换出错")
-        self.label.setStyleSheet("QLabel { border: 3px solid #F44336; color: #F44336; font-size: 16px; padding: 20px; }")
+        self.label.setStyleSheet("QLabel { border: 3px solid #F44336; color: #F44336; font-size: 16px; padding: 30px; }")
         self.status_label.setText(f"错误: {err_msg[:50]}...")
 
     def closeEvent(self, event):
