@@ -105,4 +105,4 @@ A: 尝试去掉 `-w` 参数重新打包（`pyinstaller -F main.py`），然后�
 
 ## 📜 开源协议
 
-MIT License
+GNU General Public License v3.0
