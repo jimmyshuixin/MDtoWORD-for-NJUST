@@ -1,12 +1,11 @@
 # MDtoWORD-for-NJUST
-一个能将Markdown格式的文件转换为word的小工具，word的排版默认为NJUST的学位论文排版。搭配一键将AI的输出内容转换为md文件的工具（deepshare)），有效解决AI输出内容复制粘贴到word格式不正确的难题。
 # NJUST Thesis Formatter (Python 版)
 
 **作者**: [[jimmyshuixin](https://github.com/jimmyshuixin "jimmyshuixin")]
 
 **版本**: V3.2
 
-这是一个基于 Python PyQt6 开发的论文格式转换工具，旨在将 Markdown 文件自动转换为符合 **南京理工大学 (NJUST)** 学位论文格式规范的 Word 文档 (`.docx`)。
+这是一个基于 Python PyQt6 开发的论文格式转换工具，旨在将 Markdown 文件自动转换为符合 **南京理工大学 (NJUST)** 学位论文格式规范的 Word 文档 (`.docx`)。搭配[deepshare](https://github.com/Yorick-Ryu/deep-share "deepshare")，实现AI写论文一条龙。
 
 ## 🚀 功能特性
 
